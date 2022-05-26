@@ -1,0 +1,232 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      input{border-color: darkgray;
+         border-radius: 25px;
+        ;
+  
+  padding: 20px; 
+  /* width: 200px; */
+  height: 30px; }
+      #map {
+        /* configure the size of the map */
+        width: 80%;
+        height: 100%;
+        display: inline-block;
+      }
+      #frm{display: inline-block;
+        position:relative;
+      bottom:60%;
+    margin-left:30px;}
+    .button {
+  display: inline-block;
+  border-radius: 4px;
+  background-color: #00FFAB;
+  border: none;
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 15px;
+  padding: 20px;
+  width: 80px;
+  transition: all 0.5s;
+  cursor: pointer;
+  margin: 50px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.button span {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: 0.5s;
+}
+
+.button span:after {
+  content: '\00bb';
+  position: absolute;
+  opacity: 0;
+  top: 0;
+  right: -20px;
+  transition: 0.5s;
+}
+
+.button:hover span {
+  padding-right: 25px;
+}
+
+.button:hover span:after {
+  opacity: 1;
+  right: 0;
+}
+    </style>
+  </head>
+  <body style=" font-Family :Verdana, sans-serif;"
+  >
+    <div ><a class="weatherwidget-io" href="https://forecast7.com/en/30d0431d24/cairo/" data-label_1="CAIRO" data-label_2="WEATHER" data-icons="Climacons Animated" data-mode="Current" data-theme="clear" >CAIRO WEATHER</a></div>
+    <div id="map"></div>
+    <div id='frm'><label for="data-input1">Location:</label>
+      <br/>
+      <br/>
+      <input type="text" id="data-input1">
+      <br/>
+      <br/>
+     
+      <label for="data-input2">Destination:</label>
+      <br/>
+      <br/>
+     
+      <input type="text" id="data-input2">
+      <br/>
+      <br/>
+      <button id='go'class="button" >GO!</button>
+     <p id="par" style='color:darkgray;margin-left:30%'> </p>
+    </div>
+    
+    <script>
+      !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+      </script>
+    <script>
+      var xhr = null;
+
+var getXmlHttpRequestObject = function () {
+    if (!xhr) {
+        // Create a new XMLHttpRequest object 
+        xhr = new XMLHttpRequest();
+    }
+    return xhr;
+};
+document.getElementById("go").addEventListener("click", () => {
+        sendData();
+    });
+function sendDataCallback() {
+  console.log("hoiiiiii")
+        if (xhr.readyState == 4 && xhr.status == 201) {
+            console.log("Data creation response received!");
+      
+             var dataDiv = document.getElementById('par');
+             document.getElementById('par').innerHTML='Have A NICE TRIP!!'
+            // Set current data text
+            var x=[]
+            var data= xhr.responseText;
+            var jsonResponse = JSON.parse(data);
+            // dataDiv.innerHTML =jsonResponse["lons"]
+            var lons= JSON.parse(jsonResponse["lons"])
+            var lats= JSON.parse(jsonResponse["lats"])
+           showRoute(lons,lats);
+  
+  
+  
+  
+  }
+
+
+
+}
+function sendData() {
+      console.log("bbbb.");
+        var dataToSend1 = document.getElementById('data-input1').value;
+        var dataToSend2 = document.getElementById('data-input2').value;
+        if (!dataToSend1) {
+            console.log("Data is empty.");
+            return;
+        }
+        if (!dataToSend2) {
+            console.log("Data is empty.");
+            return;
+        }
+        document.getElementById('par').innerHTML='processing....'
+        console.log("Sending data: " + dataToSend1+" "+dataToSend2);
+        xhr = getXmlHttpRequestObject();
+        localStorage["way"] = null
+        xhr.onreadystatechange = sendDataCallback;
+
+        // asynchronous requests
+        xhr.open("POST", "http://localhost:6969/users", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.timeout = 3000000000000000000000000000; // Set timeout to 4 seconds (4000 milliseconds)
+        xhr.ontimeout = function () { alert("Timed out!!!"); }
+        // Send the request over the network
+        xhr.send(JSON.stringify({"loc": dataToSend1,"des":dataToSend2}));
+    }
+  
+      // initialize Leaflet
+      var map = L.map('map').setView({lat: 30.0444, lng: 31.2357}, 2);
+
+      // add the OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      }).addTo(map);
+
+      // show the scale bar on the lower left corner
+      L.control.scale({imperial: true, metric: true}).addTo(map);
+
+      // show a marker on the map
+      function showRoute(lons,lats){
+      L.marker([lats[0],lons[0]]).bindPopup('Start').addTo(map);
+     var x=[]
+     for(var i=0;i<lats.length;i++){
+           x.push(
+            L.latLng(lats[i],lons[i])
+
+    )}
+  n=lats.length-1
+   console.log(x)
+   
+   var control = L.Routing.control({
+            waypoints:x,
+            lineOptions:{
+                styles: [{color: 'transparent', opacity: 1, weight: 5}],
+                addWaypoints:false
+            },
+            waypointMode:"snap",
+            show:false,
+            draggableWaypoints: false,
+            createMarker: function(){ return false; },
+            totalDistanceRoundingSensitivity:-1,
+            setAlternatives:[{summary:{totalDistance:10},
+        name:"xx",coordinates:x,waypoints:[[lats[0],lons[0]],[lats[n],lons[n]]]}]
+            }).addTo(map);
+        
+  L.marker([lats[n],lons[n]]).addTo(map).bindPopup("End");
+    var route = {summary:{totalDistance:10},
+        name:"xx",coordinates:x,waypoints:[[lats[0],lons[0]],[lats[n],lons[n]]]}
+        console.log(route.waypoints)
+        L.Routing.line({
+        name:"xx",coordinates:x,Waypoints:[L.latLng(lats[0],lons[0]),L.latLng(lats[n],lons[n])]}, {
+                addWaypoints: false,
+                extendToWaypoints: false,
+                routeWhileDragging: false,
+                autoRoute: true,
+                useZoomParameter: false,
+                draggableWaypoints: false,
+                addWaypoints: false,
+                styles:[{color: 'lightgreen', opacity: 1, weight: 5}]
+                ,
+               
+               
+            }).addTo(map)
+  // var m={pointMarkerStyle:{radius: 5,color: '#03f',fillColor: 'white',opacity: 1,fillOpacity: 0.7},summaryTemplate:'<h2>{name}</h2><h3>{distance}, {time}</h3>',distanceTemplate:'{value} {unit}',timeTemplate:'{time}',containerClassName:'',alternativeClassName:'',minimizedClassName:'',itineraryClassName:'',totalDistanceRoundingSensitivity:-1,show:true,formatter:new L.Routing.Formatter(),collapsible:false,collapseBtn:()=>{},collapseBtnClass:'leaflet-routing-collapse-btn'}
+  // L.Routing.itinerary(m)
+        
+          }
+
+            
+        
+    </script>
+  </body>
+</html>
