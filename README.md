@@ -12,6 +12,7 @@ javascript
 HTMl
 CSS
 python 3
+```
 ## Running the server locally
 ```
 $ cd backend
@@ -26,5 +27,8 @@ $ http-serve
  ## Demo
   A Demo of the application is available through
   this link:https://drive.google.com/file/d/1s_5eO2pgmAzKO_ALplTsoPBE2Hycdrcc/view?usp=sharing
+
+  for more information about building of the system check this publication:
   ```
-  for more information about building of the system check this publication:https://drive.google.com/file/d/1wHDkaztJYNO_0Gi2YuXjX_OeqaLMH6mp/view?usp=sharing
+  https://drive.google.com/file/d/1wHDkaztJYNO_0Gi2YuXjX_OeqaLMH6mp/view?usp=sharing
+```
