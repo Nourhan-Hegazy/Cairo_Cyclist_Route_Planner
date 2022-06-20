@@ -87,7 +87,7 @@ def possible_paths(G,loc,des):
  loc=ox.distance.nearest_nodes(G,lon1,lat1 ,return_dist=False)
  des=ox.distance.nearest_nodes(G, lon2, lat2, return_dist=False)
 #  print((G.nodes[loc]['x'],G.nodes[loc]['y']))
- l=ox.distance.k_shortest_paths(G, loc, des,5, weight='length')
+ l=ox.distance.k_shortest_paths(G, loc, des,50, weight='length')
 #  i=0
  x=[]
 #  print(type(l))
@@ -492,6 +492,9 @@ def route(loc,des):
  
   paths_costs.append(path_cost) 
   print('###################')
+  print (path_cost)
+  print(intr)
+  print('###################*********')
  maxi=max(costs)
  gainMax=max(gains)
  max_uv=max(uv_costs)
@@ -560,7 +563,7 @@ def route(loc,des):
 #       
 #    green_route.append(nodes[osmid.index(y)])
  route=[]
- 
+ best=paths[1]
  for p in best:
    (x,y)=way=p
    route.append(x)
@@ -660,3 +663,4 @@ def users():
 
 if __name__ == "__main__":
     app.run("localhost", 6969)
+
