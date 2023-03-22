@@ -181,7 +181,7 @@ def getIndustrial(loc,des):
   return p
 def get_traffic_delay(slon,slat,dlon,dlat):
     endpoint = f"https://maps.googleapis.com/maps/api/distancematrix/json"
-    params = {"origins": slat+","+slon,"destinations":dlat+","+dlon,"departure_time":"now","key":'AIzaSyDtSGH4mC675HIpzM6o_JIvb8SNhv6c1Fs'}
+    params = {"origins": slat+","+slon,"destinations":dlat+","+dlon,"departure_time":"now","key":'AIzaSyAnOwWHqM-5H6mJ69nuZqJmakw7NvzvNQA'}
     url_params = urlencode(params)
     url = f"{endpoint}?{url_params}"
     r = requests.get(url)
@@ -198,7 +198,7 @@ def getElevations(x):
       s=s+"|"+str(lat)+","+str(lon)
   
   endpoint = f"https://maps.googleapis.com/maps/api/elevation/json"
-  params = {"locations":s, "key":'AIzaSyDtSGH4mC675HIpzM6o_JIvb8SNhv6c1Fs'}
+  params = {"locations":s, "key":'AIzaSyAnOwWHqM-5H6mJ69nuZqJmakw7NvzvNQA'}
   url_params = urlencode(params)
   url = f"{endpoint}?{url_params}"
   r = requests.get(url)
@@ -217,8 +217,8 @@ def osmid_lonlat(graph,osmid):
   return(lon,lat)
 ###########
 def route(loc,des):
-#  loc=( 31.3473,30.0619)#° N, 31.3458° E 30.0203° N, 31.4950° E 30.0329° N, 31.4100° E
-#  des=(31.3458,30.0729) 
+ loc=( 31.3473,30.0619)#° N, 31.3458° E 30.0203° N, 31.4950° E 30.0329° N, 31.4100° E
+ des=(31.3458,30.0729) 
  graph=createNetwork(loc,des)
  paths=possible_paths(graph,loc,des)
 #  ox.plot.plot_graph_routes(graph, paths, route_colors=['r','y','g','b','r'], route_linewidths=[1,20,14,5,10])
@@ -297,6 +297,7 @@ def route(loc,des):
      # plt.show()#
      tx.append(shed/buffer.area)
      shadow=poi[u][v]['shadow']=shed/buffer.area
+     poi[u][v]['thermal comfort area/buffer']=shed/buffer.area
      poi[u][v]['green_500']=green_500/b2.area
      if(0.01<=shadow<0.05):
        poi[u][v]['shadow']=0.8
@@ -319,6 +320,7 @@ def route(loc,des):
      (slon,slat)= a['u']
      (dlon,dlat)= a['v']
      traffic=get_traffic_delay(str(slon),str(slat),str(dlon),str(dlat))
+     poi.edges[(u,v)]['traffic_delay']= traffic
      traffic=traffic/10#1min=10%extra meters of pollution
  
      time.sleep(0.5)
@@ -402,6 +404,7 @@ def route(loc,des):
        c=c+1
      else:
         r=0
+     poi[u][v]['# of intersections /node']=count
      poi[u][v]['intersection']=r
      poi[u][v]['intersection_cost']=r*avg_length
     # print(r)
@@ -409,6 +412,7 @@ def route(loc,des):
  weather=get_weather()
  print("!!!!!!!!!!!!!!!the weather now is:")
  print(weather)
+
  ww=0
  if(2<weather['uvi']<=5):
    ww=1
@@ -576,7 +580,16 @@ def route(loc,des):
      
 #      i=i+1
  
-    
+ print("poiiii")
+ ####-----------nourhan-------------------######
+ #u,v :terminal nodes
+ #thermal comfort area/buffer:amount of green areas for the buffer conducted around the street ->thermal comfort
+ # # of intersections /node ->safety
+ # green_500 : amount of green areas , traffic_delay: extra time in traffic ->Air quality
+ # gradient: inclination of edge -> rider's effort
+ print(poi.edges(data=True))
+ print(weather)
+ ###########################
  return(green_route)
  # print(min(int_costs))
  # print(int_costs[paths_costs_n.index(min(paths_costs_n))])
@@ -605,7 +618,7 @@ def route(loc,des):
  # print(weather)
 def extract_lng_lat(address_or_postalcode, data_type = 'json'):
     endpoint = f"https://maps.googleapis.com/maps/api/geocode/{data_type}"
-    params = {"address": address_or_postalcode,"components":"country:egypt" ,"key":'AIzaSyCVlAzzx4LrOubBY5WlwJ5beJoehjISRUI'}
+    params = {"address": address_or_postalcode,"components":"country:egypt" ,"key":'AIzaSyAnOwWHqM-5H6mJ69nuZqJmakw7NvzvNQA'}
     url_params = urlencode(params)
     url = f"{endpoint}?{url_params}"
     r = requests.get(url)
