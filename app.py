@@ -1,5 +1,6 @@
 from flask import Flask, request
 import flask
+import pickle
 import json 
 from flask_cors import CORS
 import requests
@@ -25,6 +26,8 @@ import requests
 from urllib.parse import urlencode
 from os.path import exists
 from requests import get,post
+import multiprocessing
+import timeit       
 app = Flask(__name__)
 CORS(app)
 ox.config(use_cache=True, log_console=True)
@@ -589,6 +592,39 @@ def route(loc,des):
  # gradient: inclination of edge -> rider's effort
  print(poi.edges(data=True))
  print(weather)
+ final_list = []
+ for edge in poi.edges(data=True):
+   ux = edge[2]['u'][0]
+   uy = edge[2]['u'][1]
+
+   vx = edge[2]['v'][0]
+   vy = edge[2]['v'][1]
+
+   del edge[2]['u']
+   del edge[2]['v']
+   del edge[2]['geometry']
+
+   edge[2]['ux'] = ux
+   edge[2]['uy'] = uy
+
+   edge[2]['vx'] = vx
+   edge[2]['vy'] = vy
+
+   final_list.append(edge[2])
+
+ 
+
+ with open('poi_pkl','wb') as f:
+   pickle.dump(final_list,f)
+   f.close()
+  
+ file = open("poi_txt.txt", "w")
+ a = file.write(str(final_list))
+ file.close()
+
+ df = pd.DataFrame(final_list)
+ df.to_csv("dataset.csv")
+
  ###########################
  return(green_route)
  # print(min(int_costs))
@@ -638,7 +674,7 @@ def hello():
 def users():
     print("users endpoint reached...")
     if request.method == "GET":
-        with open("/Users/macbookair/basic-web-app-tutorial/backend/users.json", "r") as f:
+        with open("./users.json", "r") as f:
             data = json.load(f)
             data.append({
                 "username": "user4",
@@ -675,5 +711,6 @@ def users():
         return flask.Response(response=json.dumps(return_data), status=201)
 
 if __name__ == "__main__":
-    app.run("localhost", 6969)
+    app.run("localhost", 6969,True)
+    
 
