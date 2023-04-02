@@ -27,7 +27,8 @@ from urllib.parse import urlencode
 from os.path import exists
 from requests import get,post
 import multiprocessing
-import timeit       
+import timeit   
+global traffic    
 app = Flask(__name__)
 CORS(app)
 ox.config(use_cache=True, log_console=True)
@@ -192,7 +193,7 @@ def get_traffic_delay(slon,slat,dlon,dlat):
     duration_in_traffic=int(r.json()["rows"][0]["elements"][0]["duration_in_traffic"]["text"].split()[0])
     if(duration_in_traffic<duration):
       duration_in_traffic=duration
-    return duration_in_traffic-duration
+    traffic = duration_in_traffic-duration
 def getElevations(x):
   (lon,lat)=x[0]
   s=str(lat)+","+str(lon)
@@ -219,62 +220,13 @@ def osmid_lonlat(graph,osmid):
   lat=graph.nodes[osmid]['y']
   return(lon,lat)
 ###########
-def route(loc,des):
- loc=( 31.3473,30.0619)#° N, 31.3458° E 30.0203° N, 31.4950° E 30.0329° N, 31.4100° E
- des=(31.3458,30.0729) 
- graph=createNetwork(loc,des)
- paths=possible_paths(graph,loc,des)
-#  ox.plot.plot_graph_routes(graph, paths, route_colors=['r','y','g','b','r'], route_linewidths=[1,20,14,5,10])
- 
-#  plt.show()
- industries=getIndustrial(loc,des)
- 
- 
- street_type=[]
- ed=[] #edges geometry
- lengths=[] #edges lengths
- edges = ox.graph_to_gdfs(graph, nodes=False, edges=True)
- 
- #############paths network#########################
- poi = nx.DiGraph()#network containing all edges of interest
- parks=getParks(loc,des)#green areas geometries in utm in the bounding box 
- 
- for streets in paths:#assigning edge attributes geometry,length,highway,u(loc in lon,lat),v(des in lon,lat)
-     for i in range(0,len(streets)-1):
-      e=edges.loc[(streets[i],streets[i+1],0  )]['geometry']
-      l=edges.loc[(streets[i],streets[i+1],0  )]['length']
-      s=edges.loc[(streets[i],streets[i+1],0  )]['highway']
-      if(isinstance(s,list)):
-       s=s[0]
-      poi.add_edge(streets[i],streets[i+1])
-      poi[streets[i]][streets[i+1]]['geometry']=polygon_to_utm(e)#line in utm coordinates
-      poi[streets[i]][streets[i+1]]['length']=l
-      poi[streets[i]][streets[i+1]]['highway']=s
-      poi[streets[i]][streets[i+1]]['u']=(graph.nodes[streets[i]]['x'],graph.nodes[streets[i]]['y'])
-      poi[streets[i]][streets[i+1]]['v']=(graph.nodes[streets[i+1]]['x'],graph.nodes[streets[i+1]]['y'])
-      print( poi[streets[i]][streets[i+1]]['u'])
-      print( poi[streets[i]][streets[i+1]]['v'])
-      print('---------------')
-      ####elev of nodes###
-     print('############################')
- osmid=list(poi.nodes)#osmids of all nodes in the network
-
- 
- nodes=[]#lon/lat of all nodes in network
+def elevation_process(nodes, graph, osmid):
  for o in osmid:
     osmid_lonlat(graph,o) 
     nodes.append(osmid_lonlat(graph,o))
-    el=getElevations(nodes)
-    ####
- q=ox.stats.count_streets_per_node(graph, nodes=list(poi.nodes))#nodes # of intersecting streets
-#####to get average length of edges####
- len1=0
- for u,v,a in poi.edges(data=True):
-   len1=len1+poi.edges[(u,v)]['length']
- avg_length=len1/len(poi.edges)
- ###############uv_cost/edge#####
- tx=[]
- for u,v,a in poi.edges(data=True):
+ el=getElevations(nodes)
+def traffic_poll_process(osmid, el, avg_length, tx):
+   for u,v,a in poi.edges(data=True):
      c=0
      shed=0#total area of green areas in 100m buffer of an edge
      line=poi.edges[(u,v)]['geometry']
@@ -412,6 +364,72 @@ def route(loc,des):
      poi[u][v]['intersection_cost']=r*avg_length
     # print(r)
    ############weights############
+ 
+
+def route(loc,des):
+ loc=( 31.3473,30.0619)#° N, 31.3458° E 30.0203° N, 31.4950° E 30.0329° N, 31.4100° E
+ des=(31.3458,30.0729) 
+ 
+
+ graph=createNetwork(loc,des)
+ paths=possible_paths(graph,loc,des)
+#  ox.plot.plot_graph_routes(graph, paths, route_colors=['r','y','g','b','r'], route_linewidths=[1,20,14,5,10])
+ 
+#  plt.show()
+ global industries
+ industries =getIndustrial(loc,des)
+ 
+ 
+ street_type=[]
+ ed=[] #edges geometry
+ lengths=[] #edges lengths
+ edges = ox.graph_to_gdfs(graph, nodes=False, edges=True)
+ 
+ #############paths network#########################
+ global poi
+ poi = nx.DiGraph()#network containing all edges of interest
+ global parks
+ parks=getParks(loc,des)#green areas geometries in utm in the bounding box 
+ 
+ for streets in paths:#assigning edge attributes geometry,length,highway,u(loc in lon,lat),v(des in lon,lat)
+     for i in range(0,len(streets)-1):
+      e=edges.loc[(streets[i],streets[i+1],0  )]['geometry']
+      l=edges.loc[(streets[i],streets[i+1],0  )]['length']
+      s=edges.loc[(streets[i],streets[i+1],0  )]['highway']
+      if(isinstance(s,list)):
+       s=s[0]
+      poi.add_edge(streets[i],streets[i+1])
+      poi[streets[i]][streets[i+1]]['geometry']=polygon_to_utm(e)#line in utm coordinates
+      poi[streets[i]][streets[i+1]]['length']=l
+      poi[streets[i]][streets[i+1]]['highway']=s
+      poi[streets[i]][streets[i+1]]['u']=(graph.nodes[streets[i]]['x'],graph.nodes[streets[i]]['y'])
+      poi[streets[i]][streets[i+1]]['v']=(graph.nodes[streets[i+1]]['x'],graph.nodes[streets[i+1]]['y'])
+      print( poi[streets[i]][streets[i+1]]['u'])
+      print( poi[streets[i]][streets[i+1]]['v'])
+      print('---------------')
+      ####elev of nodes###
+     print('############################')
+ osmid=list(poi.nodes)#osmids of all nodes in the network
+
+ 
+ nodes=[]#lon/lat of all nodes in network
+ #####to get average length of edges####
+ len1=0
+ for u,v,a in poi.edges(data=True):
+   len1=len1+poi.edges[(u,v)]['length']
+ avg_length=len1/len(poi.edges)
+ ###############uv_cost/edge#####
+ tx=[]
+ elv_worker = multiprocessing.Process(target=elevation_process, args=(nodes, graph, osmid))
+ elv_worker.start()
+ elv_worker.join()
+ 
+ traffic_worker = multiprocessing.Process(target=traffic_poll_process, args=(osmid, avg_length, tx))
+ traffic_worker.start()
+    ####
+ q=ox.stats.count_streets_per_node(graph, nodes=list(poi.nodes))#nodes # of intersecting streets
+
+ global weather
  weather=get_weather()
  print("!!!!!!!!!!!!!!!the weather now is:")
  print(weather)
@@ -459,6 +477,7 @@ def route(loc,des):
  ints=[]
  costs=[]
  gains=[]
+ traffic_worker.join()
  for p in paths:
   uv_cost=0
   el_cost=0
@@ -474,7 +493,7 @@ def route(loc,des):
     print(poi.edges[(u,v)]['u'])
     print(poi.edges[(u,v)]['v'])
     print('**********')
-   
+    print(poi.edges[(u,v)])
     uv_cost=uv_cost+poi.edges[(u,v)]['uv_cost']
     el_cost=el_cost+poi.edges[(u,v)]['elevation_cost']
     int_cost=int_cost+poi.edges[(u,v)]['intersection_cost']
@@ -682,6 +701,7 @@ def users():
             })
             return flask.jsonify(data)
     if request.method == "POST":
+        tic = timeit.default_timer()
         received_data = request.get_json()
         print(f"received data: {received_data}")
         loc =extract_lng_lat( received_data['loc'])
@@ -708,9 +728,12 @@ def users():
           "lats":   f'{lats}',
           "lons":   f'{lons}'
         }
+        toc = timeit.default_timer()
+        print("Execution Time: " , toc-tic , " Sec")
         return flask.Response(response=json.dumps(return_data), status=201)
 
 if __name__ == "__main__":
     app.run("localhost", 6969,True)
+   
     
 
